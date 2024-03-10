@@ -1,6 +1,6 @@
 namespace CostStore.Requests;
 
-public class AllocateRequest : Request
+public class AllocateRequest
 {
     public string PartitionKey { get; set; }
     public int Year { get; set; }

@@ -1,6 +1,6 @@
 namespace CostStore.Requests;
 
-public class ImportRequest : Request
+public class ImportRequest
 {
     public string Path {get; set;}
 

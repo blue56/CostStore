@@ -29,14 +29,14 @@ public class CostModule
         c.Save();
     }
 
-    public static void Allocate(string PartitionKey, AllocateRequest AllocateRequest)
+    public static void Allocate(AllocateRequest AllocateRequest)
     {
         int Year = AllocateRequest.Year;
         int Month = AllocateRequest.Month;
 
         //
         var cl = CostModule.List(
-            PartitionKey, 
+            AllocateRequest.PartitionKey, 
             AllocateRequest.Year, 
             AllocateRequest.Month);
 
@@ -53,14 +53,14 @@ public class CostModule
             pmonth = pmonth -1;
         }
 
-        var pcl = CostModule.List(PartitionKey, pyear, pmonth);
+        var pcl = CostModule.List(AllocateRequest.PartitionKey, pyear, pmonth);
 
         foreach (var c in cl)
         {
             if (string.IsNullOrEmpty(c.CostCenterId))
             {
                 // Try to find simelar cost
-                var pc = pcl.Where(x => x.PartitionKey == c.PartitionKey
+                var pc = pcl.Where(x => x.PK == c.PK
                 && x.ResourceId == c.ResourceId
                 && x.Service == c.Service).FirstOrDefault();
 

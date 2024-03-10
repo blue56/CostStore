@@ -7,7 +7,7 @@ namespace CostStore;
 
 public class ImporterModule
 {
-    public static void Import(string PartitionKey, ImportRequest Request)
+    public static void Import(ImportRequest Request)
     {
         // Get file content
         string content = GetFileContent(CostStore.GetBucketname(), Request.Path);
@@ -24,7 +24,7 @@ public class ImporterModule
             Cost c = new Cost();
 
             // Required data
-            c.PartitionKey = PartitionKey;
+            c.PK = Request.PartitionKey;
             c.Currency = n["Currency"].AsValue().ToString();
             c.Total = decimal.Parse(n["Total"].AsValue().ToString());
             c.Service = n["Service"].AsValue().ToString();
@@ -72,7 +72,7 @@ public class ImporterModule
 
 
             // Check if it exists
-            var ec = CostModule.Get(PartitionKey, c.GetCostId(Year, Month));
+            var ec = CostModule.Get(Request.PartitionKey, c.GetCostId(Year, Month));
             if (ec == null)
             {
                 c.Save();

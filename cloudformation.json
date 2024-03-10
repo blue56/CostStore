@@ -1,0 +1,120 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Parameters": {
+        "CostStoreBucketname": {
+            "Description": "Name of the CostStore bucket",
+            "Type": "String"
+        },
+        "S3Bucketname": {
+            "Description": "S3 bucketname for CostStore Lambda function binary.",
+            "Type": "String"
+        },
+        "S3Path": {
+            "Description": "S3 path for CostStore Lambda function binary.",
+            "Type": "String"
+        }
+    },
+    "Resources": {
+        "CostTable": {
+            "Type": "AWS::DynamoDB::Table",
+            "DeletionPolicy": "Retain",
+            "Properties": {
+                "TableName": "Cost",
+                "BillingMode": "PAY_PER_REQUEST",
+                "AttributeDefinitions": [
+                    {
+                        "AttributeName": "PK",
+                        "AttributeType": "S"
+                    },
+                    {
+                        "AttributeName": "CostId",
+                        "AttributeType": "S"
+                    }
+                ],
+                "KeySchema": [
+                    {
+                        "AttributeName": "PK",
+                        "KeyType": "HASH"
+                    },
+                    {
+                        "AttributeName": "CostId",
+                        "KeyType": "RANGE"
+                    }
+                ]
+            }
+        },
+        "CostStoreS3Bucket": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {
+                "AccessControl": "Private",
+                "BucketName": {
+                    "Ref": "CostStoreBucketname"
+                }
+            }
+        },
+        "CostStoreRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "RoleName": "CostStoreRole",
+                "Description": "Execution role for CostStore lambda function",
+                "ManagedPolicyArns": [
+                    "arn:aws:iam::aws:policy/AmazonS3FullAccess",
+                    "arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess",
+                    "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+                ],
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "lambda.amazonaws.com"
+                                ]
+                            },
+                            "Action": [
+                                "sts:AssumeRole"
+                            ]
+                        }
+                    ]
+                }
+            }
+        },
+        "CostStoreLambda": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+                "FunctionName": "CostStore",
+                "Handler": "CostStore::CostStore.Function::FunctionHandler",
+                "Code": {
+                    "S3Bucket": {
+                        "Ref": "S3Bucketname"
+                    },
+                    "S3Key": {
+                        "Ref": "S3Path"
+                    }
+                },
+                "Architectures": [
+                    "arm64"
+                ],
+                "Environment": {
+                    "Variables": {
+                        "Bucketname": {
+                            "Ref": "CostStoreBucketname"
+                        },
+                        "Region": {
+                            "Ref": "AWS::Region"
+                        }
+                    }
+                },
+                "Timeout": 300,
+                "Role": {
+                    "Fn::GetAtt": [
+                        "CostStoreRole",
+                        "Arn"
+                    ]
+                },
+                "Runtime": "dotnet8"
+            }
+        }
+    }
+}

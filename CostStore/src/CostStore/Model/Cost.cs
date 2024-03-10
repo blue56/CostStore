@@ -7,7 +7,7 @@ namespace CostStore;
 public class Cost
 {
     [DynamoDBHashKey] //Partition key
-    public string PartitionKey
+    public string PK
     {
         get; set;
     }

@@ -11,4 +11,6 @@ public class ImportRequest
     
     // ExchangeRate Basecost -> Total rate
     public decimal? ExchangeRate {get; set;}
+
+    public bool? Overwrite {get; set;}
 }

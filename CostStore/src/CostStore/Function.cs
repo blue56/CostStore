@@ -51,10 +51,10 @@ public class Function
         }
         else if (json["Method"].AsValue().ToString() == "Export")
         {
-            ImportRequest importRequest
-              = JsonSerializer.Deserialize<ImportRequest>(json, options);
+            ExportRequest exportRequest
+              = JsonSerializer.Deserialize<ExportRequest>(json, options);
 
-            ImporterModule.Import(importRequest);
+            ExportModule.Export(exportRequest);
         }
 
         return "OK";

@@ -73,7 +73,8 @@ public class ImporterModule
 
             // Check if it exists
             var ec = CostModule.Get(Request.PartitionKey, c.GetCostId(Year, Month));
-            if (ec == null)
+            
+            if (Request.Overwrite == true || ec == null)
             {
                 c.Save();
             }

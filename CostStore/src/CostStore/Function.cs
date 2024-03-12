@@ -56,6 +56,13 @@ public class Function
 
             ExportModule.Export(exportRequest);
         }
+        else if (json["Method"].AsValue().ToString() == "GroupedExport")
+        {
+            GroupedExportRequest exportRequest
+              = JsonSerializer.Deserialize<GroupedExportRequest>(json, options);
+
+            ExportModule.GroupedExport(exportRequest);
+        }
 
         return "OK";
     }

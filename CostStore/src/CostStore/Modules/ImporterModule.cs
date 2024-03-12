@@ -38,6 +38,7 @@ public class ImporterModule
                 c.BaseCost = c.Total;
                 c.BaseCostCurrency = c.Currency;
                 c.ExchangeRate = (decimal)Request.ExchangeRate;
+                c.ExchangeCurrency = Request.ExchangeCurrency;
                 c.Total = (decimal)(c.Total * Request.ExchangeRate);
             }
 

@@ -28,7 +28,7 @@ public class Cost
         get; set;
     }
 
-    public decimal? Uplift 
+    public decimal? Uplift
     {
         get; set;
     }
@@ -73,10 +73,8 @@ public class Cost
         get; set;
     }
 
-    public string AllocationStatus
-    {
-        get; set;
-    }
+    public string AllocationStatus { get; set; }
+    public string? ExchangeCurrency { get; set; }
 
     public string GetCostId(int Year, int Month)
     {

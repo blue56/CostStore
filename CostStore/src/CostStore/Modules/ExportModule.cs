@@ -20,19 +20,28 @@ public class ExportModule
         GroupedMonthExport me = new GroupedMonthExport();
         me.Year = request.Year;
         me.Month = request.Month;
-        me.CostCenters = new Dictionary<string, Cost[]>();
+
+        List<CostCenterCost> cccList = new List<CostCenterCost>();
 
         foreach (var g in grouping)
         {
+            CostCenterCost ccc = new CostCenterCost();
+
             if (g.CostCenterId == null)
             {
-                me.CostCenters.Add("Unassigned", g.Costlist.ToArray());
+                ccc.CostCenterId = "Unassigned";
+                ccc.Cost = g.Costlist.ToArray();
             }
             else
             {
-                me.CostCenters.Add(g.CostCenterId, g.Costlist.ToArray());
+                ccc.CostCenterId = g.CostCenterId;
+                ccc.Cost = g.Costlist.ToArray();
             }
+
+            cccList.Add(ccc);
         }
+
+        me.CostCenters = cccList.ToArray();
 
         // Create an S3 client
         var _s3Client = new AmazonS3Client(CostStore.GetRegion());

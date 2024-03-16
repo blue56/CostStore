@@ -25,30 +25,25 @@ public class ImporterModule
 
             // Required data
             c.PK = Request.PartitionKey;
-            c.Currency = n["Currency"].AsValue().ToString();
-            c.Total = decimal.Parse(n["Total"].AsValue().ToString());
             c.Service = n["Service"].AsValue().ToString();
             c.ResourceId = n["ResourceId"].AsValue().ToString();
-            c.Name = n["Name"].AsValue().ToString();
             c.CostId = c.GetCostId(Year, Month);
 
             // Exchange rate
             if (Request.ExchangeRate != null && Request.ExchangeRate != 0)
             {
-                c.BaseCost = c.Total;
-                c.BaseCostCurrency = c.Currency;
-                c.ExchangeRate = (decimal)Request.ExchangeRate;
-                c.ExchangeCurrency = Request.ExchangeCurrency;
+                c.Amount = c.Total;
+                c.Rate = (decimal)Request.ExchangeRate;
                 c.Total = (decimal)(c.Total * Request.ExchangeRate);
             }
 
             // Uplift
             if (Request.Uplift != null && Request.Uplift != 0)
             {
-                if (c.BaseCost == null)
+                if (c.Amount == null)
                 {
-                    c.BaseCost = c.Total;
-                    c.BaseCostCurrency = c.Currency;
+                    c.Amount = c.Total;
+                    c.Currency = c.Currency;
                 }
 
                 c.Uplift = Request.Uplift;
@@ -56,11 +51,21 @@ public class ImporterModule
             }
 
             // Optional data
-            if (n["Basecost"] != null)
-                c.BaseCost = decimal.Parse(n["Basecost"].AsValue().ToString());
 
-            if (n["BasecostCurrency"] != null)
-                c.BaseCostCurrency = n["BasecostCurrency"].AsValue().ToString();
+            if (n["Name"] != null)
+                c.Name = n["Name"].AsValue().ToString();
+
+            if (n["Currency"] != null)
+                c.Currency = n["Currency"].AsValue().ToString();
+
+            if (n["Amount"] != null)
+                c.Amount = decimal.Parse(n["Amount"].AsValue().ToString());
+
+            if (n["Total"] != null)
+                c.Total = decimal.Parse(n["Total"].AsValue().ToString());
+
+            if (n["Currency"] != null)
+                c.Currency = n["Currency"].AsValue().ToString();
 
             if (n["Uplift"] != null)
                 c.Uplift = decimal.Parse(n["Uplift"].AsValue().ToString());
@@ -68,13 +73,12 @@ public class ImporterModule
             if (n["UpliftDescription"] != null)
                 c.UpliftDescription = n["UpliftDescription"].AsValue().ToString();
 
-            if (n["ExchangeRate"] != null)
-                c.Uplift = decimal.Parse(n["ExchangeRate"].AsValue().ToString());
-
+            if (n["Rate"] != null)
+                c.Rate = decimal.Parse(n["Rate"].AsValue().ToString());
 
             // Check if it exists
             var ec = CostModule.Get(Request.PartitionKey, c.GetCostId(Year, Month));
-            
+
             if (Request.Overwrite == true || ec == null)
             {
                 c.Save();

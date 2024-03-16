@@ -17,9 +17,13 @@ public class ExportModule
                        group p by p.CostCenterId into g
                        select new { CostCenterId = g.Key, Costlist = g.ToList() };
 
+        // Get metadata for cost store
+        Metadata metadata = CostStore.GetMetadata(request.PartitionKey);
+
         GroupedMonthExport me = new GroupedMonthExport();
         me.Year = request.Year;
         me.Month = request.Month;
+        me.Currency = metadata.Currency;
 
         List<CostCenterCost> cccList = new List<CostCenterCost>();
 

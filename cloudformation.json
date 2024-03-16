@@ -17,7 +17,7 @@
     "Resources": {
         "CostTable": {
             "Type": "AWS::DynamoDB::Table",
-            "DeletionPolicy": "Retain",
+            "DeletionPolicy": "Delete",
             "Properties": {
                 "TableName": "Cost",
                 "BillingMode": "PAY_PER_REQUEST",

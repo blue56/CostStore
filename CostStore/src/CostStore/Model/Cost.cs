@@ -18,12 +18,12 @@ public class Cost
         get; set;
     }
 
-    public decimal? BaseCost
+    public decimal? Amount
     {
         get; set;
     }
 
-    public string? BaseCostCurrency
+    public string? Currency
     {
         get; set;
     }
@@ -38,7 +38,7 @@ public class Cost
         get; set;
     }
 
-    public decimal? ExchangeRate
+    public decimal? Rate
     {
         get; set;
     }
@@ -53,12 +53,7 @@ public class Cost
         get; set;
     }
 
-    public decimal Total
-    {
-        get; set;
-    }
-
-    public string Currency
+    public decimal? Total
     {
         get; set;
     }
@@ -74,7 +69,6 @@ public class Cost
     }
 
     public string AllocationStatus { get; set; }
-    public string? ExchangeCurrency { get; set; }
 
     public string GetCostId(int Year, int Month)
     {

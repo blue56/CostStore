@@ -29,4 +29,10 @@ public class CostStore
     {
         return _region;
     }
+
+    public static Metadata GetMetadata(string PartitionKey) 
+    {
+        var dbc = DB.GetContext();
+        return dbc.LoadAsync<Metadata>(PartitionKey, "metadata").Result;
+    }
 }

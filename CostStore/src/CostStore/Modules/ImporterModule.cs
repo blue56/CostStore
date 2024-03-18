@@ -29,34 +29,10 @@ public class ImporterModule
             c.ResourceId = n["ResourceId"].AsValue().ToString();
             c.CostId = c.GetCostId(Year, Month);
 
-            // Exchange rate
-            if (Request.ExchangeRate != null && Request.ExchangeRate != 0)
-            {
-                c.Amount = c.Total;
-                c.Rate = (decimal)Request.ExchangeRate;
-                c.Total = (decimal)(c.Total * Request.ExchangeRate);
-            }
-
-            // Uplift
-            if (Request.Uplift != null && Request.Uplift != 0)
-            {
-                if (c.Amount == null)
-                {
-                    c.Amount = c.Total;
-                    c.Currency = c.Currency;
-                }
-
-                c.Uplift = Request.Uplift;
-                c.Total = (decimal)(c.Total * c.Uplift);
-            }
-
             // Optional data
 
             if (n["Name"] != null)
                 c.Name = n["Name"].AsValue().ToString();
-
-            if (n["Currency"] != null)
-                c.Currency = n["Currency"].AsValue().ToString();
 
             if (n["Amount"] != null)
                 c.Amount = decimal.Parse(n["Amount"].AsValue().ToString());
@@ -75,6 +51,32 @@ public class ImporterModule
 
             if (n["Rate"] != null)
                 c.Rate = decimal.Parse(n["Rate"].AsValue().ToString());
+
+            // Exchange rate
+            if (Request.ExchangeRate != null
+                && Request.ExchangeRate != 0
+                && c.Amount != null
+                && c.Amount != 0)
+            {
+                c.Rate = (decimal)Request.ExchangeRate;
+                c.Total = (decimal)(c.Amount * Request.ExchangeRate);
+            }
+
+            // Uplift
+            if (Request.Uplift != null
+                && Request.Uplift != 0
+                && c.Amount != null
+                && c.Amount != 0)
+            {
+                c.Uplift = Request.Uplift;
+
+                if (c.Total == null)
+                {
+                    c.Total = c.Amount;
+                }
+
+                c.Total = (decimal)(c.Total * c.Uplift);
+            }
 
             // Check if it exists
             var ec = CostModule.Get(Request.PartitionKey, c.GetCostId(Year, Month));

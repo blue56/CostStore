@@ -18,7 +18,7 @@ public class Cost
         get; set;
     }
 
-    public decimal? Amount
+    public decimal Amount
     {
         get; set;
     }
@@ -29,6 +29,11 @@ public class Cost
     }
 
     public decimal? Uplift
+    {
+        get; set;
+    }
+
+    public decimal? UpliftAmount
     {
         get; set;
     }

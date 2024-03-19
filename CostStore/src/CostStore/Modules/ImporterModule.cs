@@ -28,29 +28,16 @@ public class ImporterModule
             c.Service = n["Service"].AsValue().ToString();
             c.ResourceId = n["ResourceId"].AsValue().ToString();
             c.CostId = c.GetCostId(Year, Month);
+            c.Amount = decimal.Parse(n["Amount"].AsValue().ToString());
+            c.Currency = n["Currency"].AsValue().ToString();
 
             // Optional data
 
             if (n["Name"] != null)
                 c.Name = n["Name"].AsValue().ToString();
 
-            if (n["Amount"] != null)
-                c.Amount = decimal.Parse(n["Amount"].AsValue().ToString());
-
-            if (n["Total"] != null)
-                c.Total = decimal.Parse(n["Total"].AsValue().ToString());
-
-            if (n["Currency"] != null)
-                c.Currency = n["Currency"].AsValue().ToString();
-
-            if (n["Uplift"] != null)
-                c.Uplift = decimal.Parse(n["Uplift"].AsValue().ToString());
-
             if (n["UpliftDescription"] != null)
                 c.UpliftDescription = n["UpliftDescription"].AsValue().ToString();
-
-            if (n["Rate"] != null)
-                c.Rate = decimal.Parse(n["Rate"].AsValue().ToString());
 
             // Exchange rate
             if (Request.ExchangeRate != null
@@ -75,7 +62,9 @@ public class ImporterModule
                     c.Total = c.Amount;
                 }
 
-                c.Total = (decimal)(c.Total * c.Uplift);
+                c.UpliftAmount = (decimal)(c.Total * c.Uplift);
+
+                c.Total = c.Total + c.UpliftAmount;
             }
 
             // Check if it exists

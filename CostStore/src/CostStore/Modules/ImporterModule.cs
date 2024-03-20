@@ -12,6 +12,8 @@ public class ImporterModule
         // Get file content
         string content = GetFileContent(CostStore.GetBucketname(), Request.Path);
 
+        var metadata = CostStore.GetMetadata(Request.PartitionKey);
+
         JsonNode jn = JsonArray.Parse(content);
 
         JsonArray ja = (JsonArray)jn;
@@ -39,16 +41,6 @@ public class ImporterModule
             if (n["UpliftDescription"] != null)
                 c.UpliftDescription = n["UpliftDescription"].AsValue().ToString();
 
-            // Exchange rate
-            if (Request.ExchangeRate != null
-                && Request.ExchangeRate != 0
-                && c.Amount != null
-                && c.Amount != 0)
-            {
-                c.Rate = (decimal)Request.ExchangeRate;
-                c.Total = (decimal)(c.Amount * Request.ExchangeRate);
-            }
-
             // Uplift
             if (Request.Uplift != null
                 && Request.Uplift != 0
@@ -57,14 +49,25 @@ public class ImporterModule
             {
                 c.Uplift = Request.Uplift;
 
-                if (c.Total == null)
-                {
-                    c.Total = c.Amount;
-                }
+                // In original currency
+                c.UpliftAmount = (decimal)(c.Amount * c.Uplift);
 
-                c.UpliftAmount = (decimal)(c.Total * c.Uplift);
+                c.Total = (decimal)(c.Amount + c.UpliftAmount);
+            }
 
-                c.Total = c.Total + c.UpliftAmount;
+            // Exchange rate
+            if (Request.ExchangeRate != null
+                && Request.ExchangeRate != 0
+                && c.Amount != null
+                && c.Amount != 0)
+            {
+                c.Rate = (decimal)Request.ExchangeRate;
+                c.Total = (decimal)(c.Total * Request.ExchangeRate); 
+            }
+            else if (c.Currency != metadata.Currency) {
+                // Cost currency not the same as cost store currency
+                // and no exchange rate provided
+                throw new ApplicationException("No exchange rate provided for cost");
             }
 
             // Check if it exists

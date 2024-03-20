@@ -66,10 +66,14 @@ public class ExportModule
         var monthcost = CostModule.List(request.PartitionKey,
             request.Year, request.Month);
 
+        // Get metadata for cost store
+        Metadata metadata = CostStore.GetMetadata(request.PartitionKey);
+
         MonthExport me = new MonthExport();
         me.Year = request.Year;
         me.Month = request.Month;
         me.Cost = monthcost;
+        me.Currency = me.Currency;
 
         // Create an S3 client
         var _s3Client = new AmazonS3Client(CostStore.GetRegion());

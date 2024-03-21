@@ -7,4 +7,5 @@ public class ExportRequest
     public int Year { get; set; }
     public int Month { get; set; }
     public string Path { get; set; }
+    public string? Service {get; set;}
 }

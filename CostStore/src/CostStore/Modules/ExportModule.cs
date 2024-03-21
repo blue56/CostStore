@@ -63,8 +63,18 @@ public class ExportModule
     public static void Export(ExportRequest request)
     {
         // Get cost for the month
-        var monthcost = CostModule.List(request.PartitionKey,
-            request.Year, request.Month);
+        Cost[] monthcost = null;
+
+        if (request.Service == null)
+        {
+            monthcost = CostModule.List(request.PartitionKey,
+                request.Year, request.Month);
+        }
+        else
+        {
+            monthcost = CostModule.ListFilterService(request.PartitionKey,
+                request.Year, request.Month, request.Service);
+        }
 
         // Get metadata for cost store
         Metadata metadata = CostStore.GetMetadata(request.PartitionKey);
@@ -73,7 +83,7 @@ public class ExportModule
         me.Year = request.Year;
         me.Month = request.Month;
         me.Cost = monthcost;
-        me.Currency = me.Currency;
+        me.Currency = metadata.Currency;
 
         // Create an S3 client
         var _s3Client = new AmazonS3Client(CostStore.GetRegion());

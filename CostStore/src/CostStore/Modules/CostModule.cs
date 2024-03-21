@@ -74,6 +74,16 @@ public class CostModule
         }
     }
 
+    public static Cost[] ListFilterService(string PartitionKey, int Year,
+        int Month, string Service)
+    {
+        var cl = List(PartitionKey, Year, Month);
+
+        var tt = cl.Where(x => x.Service == Service);
+
+        return tt.ToArray();
+    }
+
     public static Cost[] List(string PartitionKey, int Year,
         int Month)
     {

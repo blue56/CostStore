@@ -1,4 +1,5 @@
 using CostStore.Requests;
+using CostStore.Responses;
 
 namespace CostStore;
 
@@ -27,6 +28,30 @@ public class CostModule
         c.CostCenterId = CostCenterId;
         c.AllocationStatus = "Manual";
         c.Save();
+    }
+
+    public static CheckResponse Check(CheckRequest checkRequest)
+    {
+        int Year = checkRequest.Year;
+        int Month = checkRequest.Month;
+
+        //
+        var cl = CostModule.List(
+            checkRequest.PartitionKey, 
+            checkRequest.Year, 
+            checkRequest.Month);
+
+        var ac = cl.Where(x => x.CostCenterId == null).Count();
+
+        CheckResponse checkResponse = new CheckResponse();
+        checkResponse.Year = checkRequest.Year;
+        checkResponse.Month = checkRequest.Month;
+        checkResponse.PartitionKey = checkRequest.PartitionKey;
+
+        // ac holds the number of cost object where costcenterid not set
+        checkResponse.IsCostAllocated = (ac == 0);
+
+        return checkResponse;
     }
 
     public static void Allocate(AllocateRequest AllocateRequest)

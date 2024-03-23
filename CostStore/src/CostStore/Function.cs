@@ -4,6 +4,7 @@ using System.Text.Json.Serialization;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Core;
 using CostStore.Requests;
+using CostStore.Responses;
 
 // Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
 [assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
@@ -18,7 +19,7 @@ public class Function
     /// <param name="input">The event for the Lambda function handler to process.</param>
     /// <param name="context">The ILambdaContext that provides methods for logging and describing the Lambda environment.</param>
     /// <returns></returns>
-    public string FunctionHandler(JsonNode json, ILambdaContext context)
+    public JsonNode FunctionHandler(JsonNode json, ILambdaContext context)
     {
         CostStore.Initialize();
 
@@ -41,6 +42,7 @@ public class Function
 
             CostModule.Allocate(allocateRequest);
 
+            return JsonNode.Parse("\"OK\"");
         }
         else if (json["Method"].AsValue().ToString() == "Import")
         {
@@ -48,6 +50,8 @@ public class Function
               = JsonSerializer.Deserialize<ImportRequest>(json, options);
 
             ImporterModule.Import(importRequest);
+
+            return JsonNode.Parse("\"OK\"");
         }
         else if (json["Method"].AsValue().ToString() == "Export")
         {
@@ -55,6 +59,8 @@ public class Function
               = JsonSerializer.Deserialize<ExportRequest>(json, options);
 
             ExportModule.Export(exportRequest);
+
+            return JsonNode.Parse("\"OK\"");
         }
         else if (json["Method"].AsValue().ToString() == "GroupedExport")
         {
@@ -62,8 +68,22 @@ public class Function
               = JsonSerializer.Deserialize<GroupedExportRequest>(json, options);
 
             ExportModule.GroupedExport(exportRequest);
-        }
 
-        return "OK";
+            return JsonNode.Parse("\"OK\"");
+        }
+        else if (json["Method"].AsValue().ToString() == "Check")
+        {
+            CheckRequest checkRequest
+              = JsonSerializer.Deserialize<CheckRequest>(json, options);
+
+            CheckResponse response = CostModule.Check(checkRequest);
+
+            string jsonString = JsonSerializer.Serialize(response);
+
+            return JsonNode.Parse(jsonString);
+        }
+        else {
+            return JsonNode.Parse("\"Unkown operation\"");
+        }
     }
 }

@@ -7,6 +7,42 @@ namespace CostStore;
 
 public class ImporterModule
 {
+    public static CreateImportResponse Create(CreateImportRequest Request)
+    {
+        Import import = new Import();
+        import.ImportId = Guid.NewGuid().ToString();
+        import.Year = Request.Year;
+        import.Month = Request.Month;
+        import.Type = "CSV";
+        import.PK = Request.PartitionKey;
+        import.CostId = import.GetCostId();
+
+        import.Save();
+
+        CreateImportResponse response = new CreateImportResponse();
+        response.ImportId = import.ImportId;
+        return response;
+    }
+
+    public static Import[] List(ListImportsRequest Request)
+    {
+        var context = DB.GetContext();
+
+        // "import-<year>-<month number>"
+        string prefix = "import";
+
+        List<object> queryVal = new List<object>();
+        queryVal.Add(prefix);
+
+        var cl = context
+            .QueryAsync<Import>(Request.PartitionKey,
+                Amazon.DynamoDBv2.DocumentModel.QueryOperator.BeginsWith,
+                queryVal)
+            .GetRemainingAsync().Result;
+
+        return cl.ToArray();
+    }
+
     public static void Import(ImportRequest Request)
     {
         // Get file content
@@ -62,9 +98,10 @@ public class ImporterModule
                 && c.Amount != 0)
             {
                 c.Rate = (decimal)Request.ExchangeRate;
-                c.Total = (decimal)(c.Total * Request.ExchangeRate); 
+                c.Total = (decimal)(c.Total * Request.ExchangeRate);
             }
-            else if (c.Currency != metadata.Currency) {
+            else if (c.Currency != metadata.Currency)
+            {
                 // Cost currency not the same as cost store currency
                 // and no exchange rate provided
                 throw new ApplicationException("No exchange rate provided for cost");
@@ -95,5 +132,4 @@ public class ImporterModule
         string content = reader.ReadToEnd();
         return content;
     }
-
 }

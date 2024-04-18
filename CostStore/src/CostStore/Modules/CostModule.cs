@@ -21,13 +21,36 @@ public class CostModule
         return dbc.LoadAsync<Cost>(PartitionKey, CostId).Result;
     }
 
-    public static void SetCostCenter(string PartitionKey, string CostId,
-        string CostCenterId)
+    public static SetCostCenterResponse SetCostCenter(SetCostCenterRequest request)
     {
-        var c = CostModule.Get(PartitionKey, CostId);
-        c.CostCenterId = CostCenterId;
+        var c = CostModule.Get(request.PartitionKey, request.CostId);
+        c.CostCenterId = request.CostCenterId;
         c.AllocationStatus = "Manual";
         c.Save();
+
+        SetCostCenterResponse response = new SetCostCenterResponse();
+        response.CostCenterId = request.CostCenterId;
+        response.CostId = request.CostId;
+        response.PartitionKey = request.PartitionKey;
+
+        return response;
+    }
+
+    public static MonthCostResponse GetMonthCost(MonthCostRequest request)
+    {
+        MonthCostResponse response = new MonthCostResponse();
+
+        var cl = CostModule.List(
+            request.PartitionKey, 
+            request.Year, 
+            request.Month);
+
+        response.Cost = cl;
+        response.Year = request.Year;
+        response.Month = request.Month;
+        response.PartitionKey = request.PartitionKey;
+
+        return response;
     }
 
     public static CheckResponse Check(CheckRequest checkRequest)

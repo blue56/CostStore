@@ -44,6 +44,52 @@ public class Function
 
             return JsonNode.Parse("\"OK\"");
         }
+        if (json["Method"].AsValue().ToString() == "MonthCost")
+        {
+            MonthCostRequest request
+              = JsonSerializer.Deserialize<MonthCostRequest>(json, options);
+
+            var response = CostModule.GetMonthCost(request);
+
+            string jsonString = JsonSerializer.Serialize(response);
+
+            return JsonNode.Parse(jsonString);
+        }
+        if (json["Method"].AsValue().ToString() == "SetCostCenter")
+        {
+            SetCostCenterRequest request
+              = JsonSerializer.Deserialize<SetCostCenterRequest>(json, options);
+
+            var response = CostModule.SetCostCenter(request);
+
+            string jsonString = JsonSerializer.Serialize(response);
+
+            return JsonNode.Parse(jsonString);
+        }
+        if (json["Method"].AsValue().ToString() == "CreateImport")
+        {
+            CreateImportRequest request
+              = JsonSerializer.Deserialize<CreateImportRequest>(json, options);
+
+            //var response = CostModule.SetCostCenter(request);
+            var response = ImporterModule.Create(request);
+
+            string jsonString = JsonSerializer.Serialize(response);
+
+            return JsonNode.Parse(jsonString);
+        }
+        if (json["Method"].AsValue().ToString() == "ListImports")
+        {
+            ListImportsRequest request
+              = JsonSerializer.Deserialize<ListImportsRequest>(json, options);
+
+            //var response = CostModule.SetCostCenter(request);
+            var response = ImporterModule.List(request);
+
+            string jsonString = JsonSerializer.Serialize(response);
+
+            return JsonNode.Parse(jsonString);
+        }
         else if (json["Method"].AsValue().ToString() == "Import")
         {
             ImportRequest importRequest
@@ -79,6 +125,15 @@ public class Function
             CheckResponse response = CostModule.Check(checkRequest);
 
             string jsonString = JsonSerializer.Serialize(response);
+
+            return JsonNode.Parse(jsonString);
+        }
+        else if (json["Method"].AsValue().ToString() == "Months")
+        {
+            string pk = json["PartitionKey"].AsValue().ToString();
+            var months = MonthModule.List(pk);
+
+            string jsonString = JsonSerializer.Serialize(months);
 
             return JsonNode.Parse(jsonString);
         }

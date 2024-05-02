@@ -3,6 +3,7 @@ using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Core;
+using Amazon.Lambda.SQSEvents;
 using CostStore.Requests;
 using CostStore.Responses;
 
@@ -13,132 +14,168 @@ namespace CostStore;
 
 public class Function
 {
-    /// <summary>
-    /// A simple function that takes a string and does a ToUpper
-    /// </summary>
-    /// <param name="input">The event for the Lambda function handler to process.</param>
-    /// <param name="context">The ILambdaContext that provides methods for logging and describing the Lambda environment.</param>
-    /// <returns></returns>
-    public JsonNode FunctionHandler(JsonNode json, ILambdaContext context)
+  /// <summary>
+  /// A simple function that takes a string and does a ToUpper
+  /// </summary>
+  /// <param name="input">The event for the Lambda function handler to process.</param>
+  /// <param name="context">The ILambdaContext that provides methods for logging and describing the Lambda environment.</param>
+  /// <returns></returns>
+  public JsonNode FunctionHandler(JsonNode json, ILambdaContext context)
+  {
+    CostStore.Initialize();
+
+    var rawMessage = json.ToJsonString();
+
+    Console.WriteLine("Message recieved: " + rawMessage);
+
+    JsonObject jo = (JsonObject)json;
+
+    var options = new JsonSerializerOptions
     {
-        CostStore.Initialize();
-
-        JsonObject jo = (JsonObject)json;
-
-        var options = new JsonSerializerOptions
-        {
-            Converters =
+      Converters =
                 {
                         new JsonStringEnumConverter()
                 },
-            NumberHandling = JsonNumberHandling.AllowReadingFromString, // this won't work
-            PropertyNameCaseInsensitive = true
-        };
+      NumberHandling = JsonNumberHandling.AllowReadingFromString, // this won't work
+      PropertyNameCaseInsensitive = true
+    };
 
-        if (json["Method"].AsValue().ToString() == "Allocate")
-        {
-            AllocateRequest allocateRequest
-              = JsonSerializer.Deserialize<AllocateRequest>(json, options);
+    if (jo.ContainsKey("Method"))
+    {
 
-            CostModule.Allocate(allocateRequest);
+      if (json["Method"].AsValue().ToString() == "Allocate")
+      {
+        AllocateRequest allocateRequest
+          = JsonSerializer.Deserialize<AllocateRequest>(json, options);
 
-            return JsonNode.Parse("\"OK\"");
-        }
-        if (json["Method"].AsValue().ToString() == "MonthCost")
-        {
-            MonthCostRequest request
-              = JsonSerializer.Deserialize<MonthCostRequest>(json, options);
+        CostModule.Allocate(allocateRequest);
 
-            var response = CostModule.GetMonthCost(request);
+        return JsonNode.Parse("\"OK\"");
+      }
+      if (json["Method"].AsValue().ToString() == "MonthCost")
+      {
+        MonthCostRequest request
+          = JsonSerializer.Deserialize<MonthCostRequest>(json, options);
 
-            string jsonString = JsonSerializer.Serialize(response);
+        var response = CostModule.GetMonthCost(request);
 
-            return JsonNode.Parse(jsonString);
-        }
-        if (json["Method"].AsValue().ToString() == "SetCostCenter")
-        {
-            SetCostCenterRequest request
-              = JsonSerializer.Deserialize<SetCostCenterRequest>(json, options);
+        string jsonString = JsonSerializer.Serialize(response);
 
-            var response = CostModule.SetCostCenter(request);
+        return JsonNode.Parse(jsonString);
+      }
+      if (json["Method"].AsValue().ToString() == "SetCostCenter")
+      {
+        SetCostCenterRequest request
+          = JsonSerializer.Deserialize<SetCostCenterRequest>(json, options);
 
-            string jsonString = JsonSerializer.Serialize(response);
+        var response = CostModule.SetCostCenter(request);
 
-            return JsonNode.Parse(jsonString);
-        }
-        if (json["Method"].AsValue().ToString() == "CreateImport")
-        {
-            CreateImportRequest request
-              = JsonSerializer.Deserialize<CreateImportRequest>(json, options);
+        string jsonString = JsonSerializer.Serialize(response);
 
-            //var response = CostModule.SetCostCenter(request);
-            var response = ImporterModule.Create(request);
+        return JsonNode.Parse(jsonString);
+      }
+      if (json["Method"].AsValue().ToString() == "CreateImport")
+      {
+        CreateImportRequest request
+          = JsonSerializer.Deserialize<CreateImportRequest>(json, options);
 
-            string jsonString = JsonSerializer.Serialize(response);
+        //var response = CostModule.SetCostCenter(request);
+        var response = ImporterModule.Create(request);
 
-            return JsonNode.Parse(jsonString);
-        }
-        if (json["Method"].AsValue().ToString() == "ListImports")
-        {
-            ListImportsRequest request
-              = JsonSerializer.Deserialize<ListImportsRequest>(json, options);
+        string jsonString = JsonSerializer.Serialize(response);
 
-            //var response = CostModule.SetCostCenter(request);
-            var response = ImporterModule.List(request);
+        return JsonNode.Parse(jsonString);
+      }
+      if (json["Method"].AsValue().ToString() == "ListImports")
+      {
+        ListImportsRequest request
+          = JsonSerializer.Deserialize<ListImportsRequest>(json, options);
 
-            string jsonString = JsonSerializer.Serialize(response);
+        //var response = CostModule.SetCostCenter(request);
+        var response = ImporterModule.List(request);
 
-            return JsonNode.Parse(jsonString);
-        }
-        else if (json["Method"].AsValue().ToString() == "Import")
-        {
-            ImportRequest importRequest
-              = JsonSerializer.Deserialize<ImportRequest>(json, options);
+        string jsonString = JsonSerializer.Serialize(response);
 
-            ImporterModule.Import(importRequest);
+        return JsonNode.Parse(jsonString);
+      }
+      else if (json["Method"].AsValue().ToString() == "Import")
+      {
+        ImportRequest importRequest
+          = JsonSerializer.Deserialize<ImportRequest>(json, options);
 
-            return JsonNode.Parse("\"OK\"");
-        }
-        else if (json["Method"].AsValue().ToString() == "Export")
-        {
-            ExportRequest exportRequest
-              = JsonSerializer.Deserialize<ExportRequest>(json, options);
+        ImporterModule.Import(importRequest);
 
-            ExportModule.Export(exportRequest);
+        return JsonNode.Parse("\"OK\"");
+      }
+      else if (json["Method"].AsValue().ToString() == "GenerateUploadUrl")
+      {
+        GenerateUploadUrlRequest request
+          = JsonSerializer.Deserialize<GenerateUploadUrlRequest>(json, options);
 
-            return JsonNode.Parse("\"OK\"");
-        }
-        else if (json["Method"].AsValue().ToString() == "GroupedExport")
-        {
-            GroupedExportRequest exportRequest
-              = JsonSerializer.Deserialize<GroupedExportRequest>(json, options);
+        var response = ImporterModule.GenerateUploadUrl(request);
 
-            ExportModule.GroupedExport(exportRequest);
+        string jsonString = JsonSerializer.Serialize(response);
 
-            return JsonNode.Parse("\"OK\"");
-        }
-        else if (json["Method"].AsValue().ToString() == "Check")
-        {
-            CheckRequest checkRequest
-              = JsonSerializer.Deserialize<CheckRequest>(json, options);
+        return JsonNode.Parse(jsonString);
+      }
+      else if (json["Method"].AsValue().ToString() == "Export")
+      {
+        ExportRequest exportRequest
+          = JsonSerializer.Deserialize<ExportRequest>(json, options);
 
-            CheckResponse response = CostModule.Check(checkRequest);
+        ExportModule.Export(exportRequest);
 
-            string jsonString = JsonSerializer.Serialize(response);
+        return JsonNode.Parse("\"OK\"");
+      }
+      else if (json["Method"].AsValue().ToString() == "GroupedExport")
+      {
+        GroupedExportRequest exportRequest
+          = JsonSerializer.Deserialize<GroupedExportRequest>(json, options);
 
-            return JsonNode.Parse(jsonString);
-        }
-        else if (json["Method"].AsValue().ToString() == "Months")
-        {
-            string pk = json["PartitionKey"].AsValue().ToString();
-            var months = MonthModule.List(pk);
+        ExportModule.GroupedExport(exportRequest);
 
-            string jsonString = JsonSerializer.Serialize(months);
+        return JsonNode.Parse("\"OK\"");
+      }
+      else if (json["Method"].AsValue().ToString() == "Check")
+      {
+        CheckRequest checkRequest
+          = JsonSerializer.Deserialize<CheckRequest>(json, options);
 
-            return JsonNode.Parse(jsonString);
-        }
-        else {
-            return JsonNode.Parse("\"Unkown operation\"");
-        }
+        CheckResponse response = CostModule.Check(checkRequest);
+
+        string jsonString = JsonSerializer.Serialize(response);
+
+        return JsonNode.Parse(jsonString);
+      }
+      else if (json["Method"].AsValue().ToString() == "Months")
+      {
+        string pk = json["PartitionKey"].AsValue().ToString();
+        var months = MonthModule.List(pk);
+
+        string jsonString = JsonSerializer.Serialize(months);
+
+        return JsonNode.Parse(jsonString);
+      }
     }
+    else if (jo.ContainsKey("Records"))
+    {
+
+      SQSEvent sqsEvent = JsonSerializer.Deserialize<SQSEvent>(jo, options);
+
+      foreach (var record in sqsEvent.Records)
+      {
+        //JsonNode sqsBodyNode = JsonNode.Parse(record.Body);
+        Import import = JsonSerializer.Deserialize<Import>(record.Body);
+
+        // Process the import
+        ImporterModule.Process(import);
+      }
+
+      // Called by SQS or SNS
+      JsonNode.Parse("\"SQS or SNS message not processed.\"");
+    }
+
+    // Default
+    return JsonNode.Parse("\"Unkown operation\"");
+  }
 }

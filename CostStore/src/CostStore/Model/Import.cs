@@ -21,6 +21,11 @@ public class Import
     public int Year { get; set; }
     public int Month { get; set; }
     public string Type { get; set; }
+    public string Status { get; set; }
+    public string UploadUrl { get; set; }
+    public decimal ExchangeRate { get; set; }
+    public decimal? Uplift { get; set; }
+    public bool? Overwrite { get; set; }
 
     public string GetCostId()
     {

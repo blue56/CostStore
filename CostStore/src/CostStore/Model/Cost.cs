@@ -82,6 +82,10 @@ public class Cost
 
     public void Save()
     {
+//       var t = DB.GetContext().CreateTransactWrite<Cost>();
+//       t.AddSaveItem(this);
+//        t.ExecuteAsync();
+
         DB.GetContext().SaveAsync(this).Wait();
     }
 }

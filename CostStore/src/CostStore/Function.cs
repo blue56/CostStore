@@ -156,6 +156,17 @@ public class Function
 
         return JsonNode.Parse(jsonString);
       }
+      else if (json["Method"].AsValue().ToString() == "Cost")
+      {
+        string pk = json["PartitionKey"].AsValue().ToString();
+        string cid = json["CostId"].AsValue().ToString();
+
+        var c = CostModule.Get(pk, cid);
+
+        string jsonString = JsonSerializer.Serialize(c);
+
+        return JsonNode.Parse(jsonString);
+      }
     }
     else if (jo.ContainsKey("Records"))
     {

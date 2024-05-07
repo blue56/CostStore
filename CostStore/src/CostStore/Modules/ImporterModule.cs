@@ -1,3 +1,4 @@
+using System.Runtime.Serialization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Amazon;
@@ -83,11 +84,17 @@ public class ImporterModule
     {
         Import import = new Import();
         import.ImportId = Guid.NewGuid().ToString();
-        import.Year = Request.Year;
-        import.Month = Request.Month;
         import.Type = "CSV";
         import.PK = Request.PartitionKey;
         import.UploadUrl = Request.UploadUrl;
+        import.Overwrite = Request.Overwrite;
+        import.Name = Request.Name;
+
+        if (Request.ExchangeRate != null)
+        {
+            import.ExchangeRate = (decimal)Request.ExchangeRate;
+        }
+
         import.CostId = import.GetCostId();
 
         import.Save();
@@ -154,6 +161,23 @@ public class ImporterModule
             int Year = int.Parse(n["Year"].AsValue().ToString());
             int Month = int.Parse(n["Month"].AsValue().ToString());
 
+            // Get month
+            var m = MonthModule.Get(Import.PK, Year, Month);
+
+            if (m == null)
+            {
+                // Create month
+                CostMonth newMonth = new CostMonth();
+                newMonth.PK = Import.PK;
+                newMonth.CostId = MonthModule.GetMonthId(Year, Month);
+                newMonth.Year = Year;
+                newMonth.Month = Month;
+                newMonth.Save();
+            }
+            else {
+                // Check if month is locked
+            }
+
             Cost c = new Cost();
 
             // Required data
@@ -182,8 +206,10 @@ public class ImporterModule
 
                 // In original currency
                 c.UpliftAmount = (decimal)(c.Amount * c.Uplift);
-
-                c.Total = (decimal)(c.Amount + c.UpliftAmount);
+            }
+            else
+            {
+                c.UpliftAmount = 0;
             }
 
             // Exchange rate
@@ -193,13 +219,21 @@ public class ImporterModule
                 && c.Amount != 0)
             {
                 c.Rate = (decimal)Import.ExchangeRate;
-                c.Total = (decimal)(c.Total * Import.ExchangeRate);
+                //c.Total = (decimal)(c.Total * Import.ExchangeRate);
+                c.Total = (decimal)((c.Amount + c.UpliftAmount) * Import.ExchangeRate);
             }
             else if (c.Currency != metadata.Currency)
             {
                 // Cost currency not the same as cost store currency
                 // and no exchange rate provided
-                throw new ApplicationException("No exchange rate provided for cost");
+                throw new MissingExchangeRateException();
+
+//                throw new ApplicationException("No exchange rate provided for cost");
+            }
+            else 
+            {
+                // Same currency as store
+                c.Total = (decimal)(c.Amount + c.UpliftAmount);
             }
 
             // Check if it exists
@@ -273,7 +307,8 @@ public class ImporterModule
             {
                 // Cost currency not the same as cost store currency
                 // and no exchange rate provided
-                throw new ApplicationException("No exchange rate provided for cost");
+                throw new MissingExchangeRateException();
+                //throw new ApplicationException("No exchange rate provided for cost");
             }
 
             // Check if it exists
@@ -316,11 +351,39 @@ public class ImporterModule
         try
         {
             Import(import);
+
+            import.Status = "Success";
+            import.Save();
+        }
+        catch (MissingExchangeRateException ex)
+        {
+            import.Status = "Currency does not match.";
+            import.Save();            
         }
         catch (Exception ex)
         {
             import.Status = "Failed: " + ex.ToString();
             import.Save();
         }
+    }
+}
+
+[Serializable]
+internal class MissingExchangeRateException : ApplicationException
+{
+    public MissingExchangeRateException()
+    {
+    }
+
+    public MissingExchangeRateException(string? message) : base(message)
+    {
+    }
+
+    public MissingExchangeRateException(string? message, Exception? innerException) : base(message, innerException)
+    {
+    }
+
+    protected MissingExchangeRateException(SerializationInfo info, StreamingContext context) : base(info, context)
+    {
     }
 }

@@ -37,6 +37,8 @@ public class MonthModule
                 queryVal)
             .GetRemainingAsync().Result;
 
-        return cl.ToArray();
+        var ordered = cl.OrderByDescending(x => x.Year).ThenByDescending(x => x.Month);
+
+        return ordered.ToArray();
     }
 }

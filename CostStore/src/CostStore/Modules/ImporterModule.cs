@@ -343,11 +343,16 @@ public class ImporterModule
         return dbc.LoadAsync<Import>(PartitionKey, SortKey).Result;
     }
 
+    public static void Process(string PartitionKey, string ImportId)
+    {
+        var import = Get(PartitionKey, ImportId);
+
+        Process(import);
+    }
+
     public static void Process(Import? import)
     {
         // Fetch import from db
-        import = Get(import.PK, import.CostId);
-
         try
         {
             Import(import);

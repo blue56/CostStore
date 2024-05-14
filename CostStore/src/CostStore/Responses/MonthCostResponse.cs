@@ -5,5 +5,6 @@ public class MonthCostResponse
     public string PartitionKey { get; set; }
     public int Year { get; set; }
     public int Month { get; set; }
+    public string Name { get; set; }
     public Cost[] Cost { get; set; }
 }

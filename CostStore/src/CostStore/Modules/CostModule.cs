@@ -40,6 +40,8 @@ public class CostModule
     {
         MonthCostResponse response = new MonthCostResponse();
 
+        var month = MonthModule.Get(request.PartitionKey, request.Year, request.Month);
+
         var cl = CostModule.List(
             request.PartitionKey, 
             request.Year, 
@@ -48,6 +50,7 @@ public class CostModule
         response.Cost = cl;
         response.Year = request.Year;
         response.Month = request.Month;
+        response.Name = month.Name;
         response.PartitionKey = request.PartitionKey;
 
         return response;

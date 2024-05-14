@@ -118,6 +118,17 @@ public class Function
 
         return JsonNode.Parse(jsonString);
       }
+      else if (json["Method"].AsValue().ToString() == "CreateReport")
+      {
+        CreateReportRequest request
+          = JsonSerializer.Deserialize<CreateReportRequest>(json, options);
+
+        var response = ReportModule.Create(request);
+
+        string jsonString = JsonSerializer.Serialize(response);
+
+        return JsonNode.Parse(jsonString);
+      }
       else if (json["Method"].AsValue().ToString() == "Export")
       {
         ExportRequest exportRequest
@@ -156,6 +167,15 @@ public class Function
 
         return JsonNode.Parse(jsonString);
       }
+      else if (json["Method"].AsValue().ToString() == "ListReports")
+      {
+        string pk = json["PartitionKey"].AsValue().ToString();
+        var reports = ReportModule.List(pk);
+
+        string jsonString = JsonSerializer.Serialize(reports);
+
+        return JsonNode.Parse(jsonString);
+      }
       else if (json["Method"].AsValue().ToString() == "Cost")
       {
         string pk = json["PartitionKey"].AsValue().ToString();
@@ -170,16 +190,17 @@ public class Function
     }
     else if (jo.ContainsKey("Records"))
     {
-
       SQSEvent sqsEvent = JsonSerializer.Deserialize<SQSEvent>(jo, options);
 
       foreach (var record in sqsEvent.Records)
       {
         //JsonNode sqsBodyNode = JsonNode.Parse(record.Body);
-        Import import = JsonSerializer.Deserialize<Import>(record.Body);
+        //Import import = JsonSerializer.Deserialize<Import>(record.Body);
+        QueueMessage message = JsonSerializer.Deserialize<QueueMessage>(record.Body);
 
         // Process the import
-        ImporterModule.Process(import);
+        //ImporterModule.Process(import);
+        QueueModule.Process(message);
       }
 
       // Called by SQS or SNS

@@ -17,16 +17,24 @@ public class Report
         get; set;
     }
 
-    public string GetCostId()
+    public string Name { get; set; }
+    public string Status {get; set;}
+    public string Created { get; set; }
+    public string Url { get; set; }
+    public string ReportId { get; set; }
+    public string ReportType { get; set; }
+    public string Period { get; set; }
+
+
+    public static string GetCostId(string ReportId)
     {
         return "report-" + ReportId;
     }
 
-
-    public string Name { get; set; }
-    public string Created { get; set; }
-    public string Url { get; set; }
-    public string ReportId { get; set; }
+    public string GetCostId()
+    {
+        return GetCostId(ReportId);
+    }
 
     public void Save()
     {

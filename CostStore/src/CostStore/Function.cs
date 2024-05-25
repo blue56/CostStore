@@ -118,12 +118,25 @@ public class Function
 
         return JsonNode.Parse(jsonString);
       }
+/*
       else if (json["Method"].AsValue().ToString() == "CreateReport")
       {
         CreateReportRequest request
           = JsonSerializer.Deserialize<CreateReportRequest>(json, options);
 
         var response = ReportModule.Create(request);
+
+        string jsonString = JsonSerializer.Serialize(response);
+
+        return JsonNode.Parse(jsonString);
+      }
+  */
+      else if (json["Method"].AsValue().ToString() == "CreateMonthReport")
+      {
+        CreateMonthReportRequest request
+          = JsonSerializer.Deserialize<CreateMonthReportRequest>(json, options);
+
+        var response = ReportModule.CreateMonthReport(request);
 
         string jsonString = JsonSerializer.Serialize(response);
 

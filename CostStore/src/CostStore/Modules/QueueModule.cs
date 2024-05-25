@@ -10,7 +10,7 @@ public class QueueModule
     {
         if (Message != null)
         {
-            if (Message.Command == "createreport")
+            if (Message.Command == "generatereport")
             {
                 ReportModule.Process(Message.PartitionKey, Message.Parameter);
             }

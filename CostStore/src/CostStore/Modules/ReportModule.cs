@@ -1,31 +1,33 @@
 using Amazon;
+using Amazon.DynamoDBv2.Model;
 using Amazon.S3;
 using Amazon.S3.Model;
 using CostStore.Requests;
+using MiniExcelLibs;
+using MiniExcelLibs.Attributes;
+using MiniExcelLibs.OpenXml;
 
 namespace CostStore;
 
 public class ReportModule
 {
-    public static void Process(string PartitionKey, string ReportId)
-    {
-        // Generate and save the report
-    }
-
-    public static CreateReportResponse Create(CreateReportRequest Request)
+    public static CreateReportResponse CreateMonthReport(CreateMonthReportRequest Request)
     {
         Report report = new Report();
         report.ReportId = Guid.NewGuid().ToString();
         report.PK = Request.PartitionKey;
         report.CostId = report.GetCostId();
         report.Name = Request.Name;
+        report.ReportType = "monthreport";
+        report.Period = Request.Month;
+        report.Status = "Queued";
         report.Save();
 
         // Send message to queue
         QueueMessage message = new QueueMessage();
         message.PartitionKey = Request.PartitionKey;
-        message.Command = "createreport";
-        message.Parameter = report.CostId;
+        message.Command = "generatereport";
+        message.Parameter = report.ReportId;
         QueueModule.SendMessage(message);
 
         CreateReportResponse crr = new CreateReportResponse();
@@ -34,6 +36,141 @@ public class ReportModule
         return crr;
     }
 
+    public static void ProcessMonthReport(Report Report)
+    {
+        // Generate and save the report
+        var sheets = new Dictionary<string, object>();
+
+        var metadata = CostStore.GetMetadata(Report.PK);
+
+        // Get all cost for month
+        var ps = Report.Period.Split("-");
+        int year = int.Parse(ps[0]);
+        int month = int.Parse(ps[1]);
+
+        var costlist = CostModule.List(Report.PK, year, month);
+
+        var config = new OpenXmlConfiguration
+        {
+            DynamicColumns = new DynamicExcelColumn[] {
+                    new DynamicExcelColumn("Service"){Index=1,Width=10},
+                    new DynamicExcelColumn("Name"){Index=1,Width=10},
+                    new DynamicExcelColumn("Resource id"){Index=1,Width=15},
+                    new DynamicExcelColumn("Amount"){Index=1,Width=10},
+                    new DynamicExcelColumn("Currency"){Index=1,Width=10},
+                    new DynamicExcelColumn("Total"){Index=1,Width=10},
+                    new DynamicExcelColumn("Cost Center"){Index=1,Width=20}
+                }
+        };
+
+        var stream = new MemoryStream();
+
+        var rowList = new List<Dictionary<string, object>>();
+
+        // Write information sheet
+        var rowvalues = new Dictionary<string, object>();
+        rowvalues.Add("Year", year);
+        rowvalues.Add("Month", month);
+        rowvalues.Add("Currency", metadata.Currency);
+        rowList.Add(rowvalues);
+
+        //        MiniExcel.SaveAs(stream, rowList, true, "Information");
+        sheets.Add("Information", rowList);
+
+        // Write cost sheet
+
+        rowList = new List<Dictionary<string, object>>();
+
+        foreach (var c in costlist)
+        {
+            rowvalues = new Dictionary<string, object>();
+
+            rowvalues.Add("Service", c.Service);
+            rowvalues.Add("Name", c.Name);
+            rowvalues.Add("ResourceId", c.ResourceId);
+            rowvalues.Add("Amount", c.Amount);
+            rowvalues.Add("Currency", c.Currency);
+            rowvalues.Add("Exchange rate (" + c.Currency + " / " + metadata.Currency + ")", c.Rate);
+            rowvalues.Add("Total", c.Total);
+            rowvalues.Add("Cost center", c.CostCenterId);
+
+            rowList.Add(rowvalues);
+        }
+
+        sheets.Add("Cost", rowList);
+
+        //        MiniExcel.SaveAs(stream, rowList, true, sheetName);
+        MiniExcel.SaveAs(stream, sheets);
+
+        var region = CostStore.GetRegion();
+        IAmazonS3 _s3Client = new AmazonS3Client(region);
+
+        var Bucketname = CostStore.GetBucketname();
+
+        string path = Report.PK + "/Reports/" + Report.ReportId;
+
+        SaveFile(_s3Client, Bucketname, path, stream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+
+        Report.Status = "Done";
+        Report.Save();
+    }
+
+    public static Report? Get(string PartitionKey, string ReportId)
+    {
+        var dbc = DB.GetContext();
+
+        string reportid = Report.GetCostId(ReportId);
+
+        return dbc.LoadAsync<Report>(PartitionKey, reportid).Result;
+    }
+
+    public static void Process(string PartitionKey, string ReportId)
+    {
+        // Read report from DB
+        var report = Get(PartitionKey, ReportId);
+
+        if (report.ReportType == "monthreport")
+        {
+            ProcessMonthReport(report);
+        }
+    }
+
+    public static void SaveFile(IAmazonS3 _s3Client, string Bucketname,
+        string S3Path, Stream Stream, string ContentType)
+    {
+        var putRequest = new PutObjectRequest
+        {
+            BucketName = Bucketname,
+            Key = S3Path,
+            ContentType = ContentType,
+            InputStream = Stream
+        };
+
+        _s3Client.PutObjectAsync(putRequest).Wait();
+    }
+
+    /*    public static CreateReportResponse Create(CreateReportRequest Request)
+        {
+            Report report = new Report();
+            report.ReportId = Guid.NewGuid().ToString();
+            report.PK = Request.PartitionKey;
+            report.CostId = report.GetCostId();
+            report.Name = Request.Name;
+            report.Save();
+
+            // Send message to queue
+            QueueMessage message = new QueueMessage();
+            message.PartitionKey = Request.PartitionKey;
+            message.Command = "createreport";
+            message.Parameter = report.ReportId;
+            QueueModule.SendMessage(message);
+
+            CreateReportResponse crr = new CreateReportResponse();
+            crr.ReportId = report.ReportId;
+
+            return crr;
+        }
+    */
     public static Report[] List(string PartitionKey)
     {
         var context = DB.GetContext();
@@ -116,13 +253,5 @@ public class ReportModule
         }
 
         return urlString;
-    }
-
-
-    public static string GenerateDownloadUrl(GenerateUploadUrlRequest? request)
-    {
-        // TODO
-
-        return "https://file-examples.com/wp-content/storage/2017/02/file_example_XLS_50.xls";
     }
 }
